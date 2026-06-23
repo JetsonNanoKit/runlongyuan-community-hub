@@ -273,6 +273,10 @@ h3 {
   background: #0f766e;
 }
 
+.kindSwitch {
+  background: #fff7ed;
+}
+
 form {
   display: grid;
   gap: 14px;
@@ -364,6 +368,51 @@ select:focus {
   margin-bottom: 18px;
 }
 
+.exampleBox {
+  display: grid;
+  gap: 10px;
+  border: 1px dashed rgba(15, 118, 110, 0.28);
+  border-radius: 22px;
+  padding: 14px;
+  background: #f0fdfa;
+}
+
+.exampleBox > strong {
+  color: #0f766e;
+  font-size: 14px;
+}
+
+.exampleBox > div {
+  display: grid;
+  gap: 8px;
+}
+
+.exampleBox button {
+  border: 0;
+  border-radius: 16px;
+  padding: 10px 12px;
+  color: #334155;
+  background: #fff;
+  text-align: left;
+  font-weight: 800;
+}
+
+.exampleBox button span {
+  display: inline-block;
+  margin-right: 8px;
+  border-radius: 999px;
+  padding: 3px 7px;
+  color: #fff;
+  background: #f97316;
+  font-size: 12px;
+}
+
+.fileHint {
+  margin: -6px 0 0;
+  color: #78716c;
+  font-size: 13px;
+}
+
 .twoColumns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -443,6 +492,20 @@ select:focus {
   font-size: 20px;
 }
 
+.thumbStrip {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.thumbStrip img {
+  width: 72px;
+  height: 58px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: #f5f5f4;
+}
+
 .postMeta {
   justify-content: space-between;
   color: #78716c;
@@ -507,6 +570,32 @@ select:focus {
 .description {
   color: #44403c;
   line-height: 1.75;
+}
+
+.imageGallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.imageGallery a {
+  display: block;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #f5f5f4;
+}
+
+.imageGallery img {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  transition: transform 180ms ease;
+}
+
+.imageGallery a:hover img {
+  transform: scale(1.03);
 }
 
 .manageBar {
@@ -629,7 +718,8 @@ select:focus {
 
   .toolbar .segmented,
   .categoryGrid,
-  .channelDeck {
+  .channelDeck,
+  .imageGallery {
     grid-template-columns: 1fr;
   }
 

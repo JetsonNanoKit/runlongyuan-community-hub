@@ -20,7 +20,9 @@
 - 按频道浏览信息：拼车、跑腿、家政、保洁、失物招领、公告
 - 按状态筛选：进行中、已完成、已关闭
 - 关键词搜索标题、内容、地点和分类
-- 发布不同类型的社区信息
+- 发布“我有需求”或“我能提供”的社区信息
+- 按分类展示发布样例，一键填充示例内容
+- 发布时可上传图片补充说明
 - 查看详情和联系方式
 - 邻里评论回应
 - 发帖人可标记完成、关闭或删除自己的信息
@@ -40,6 +42,8 @@
 2. 复制并执行 `supabase/schema.sql` 中的全部 SQL。
 3. 打开 `Authentication` -> `Providers` -> `Email`。
 4. 关闭 `Confirm email`，否则手机号注册后不会自动登录。
+
+SQL 会创建 `community_posts`、`comments` 等数据表，也会创建公开读取的 `community-images` Storage bucket，用于保存帖子图片。
 
 本项目用手机号生成内部邮箱来接入 Supabase Auth，例如 `13800000000@runlongyuan-users.com`。用户界面仍然只展示手机号登录。
 
@@ -108,7 +112,6 @@ VITE_SUPABASE_ANON_KEY=你的 Supabase anon public key
 
 ## 后续可扩展方向
 
-- 图片上传，适合失物招领和保洁前后对比
 - 信息置顶和公告轮播
 - 举报与审核队列
 - 小区住户认证

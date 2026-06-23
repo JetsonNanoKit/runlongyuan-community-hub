@@ -13,15 +13,24 @@ create table if not exists public.community_posts (
   category text not null check (
     category in ('carpool', 'errand', 'housekeeping', 'cleaning', 'lost_found', 'notice')
   ),
+  kind text not null default 'request' check (kind in ('request', 'offer')),
   title text not null,
   content text not null,
   contact text not null,
   location text,
   status text not null default 'open' check (status in ('open', 'done', 'closed')),
   metadata jsonb not null default '{}'::jsonb,
+  image_urls text[] not null default '{}'::text[],
   author_id uuid not null references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now()
 );
+
+alter table public.community_posts
+add column if not exists kind text not null default 'request'
+check (kind in ('request', 'offer'));
+
+alter table public.community_posts
+add column if not exists image_urls text[] not null default '{}'::text[];
 
 create table if not exists public.comments (
   id uuid primary key default gen_random_uuid(),
@@ -34,6 +43,10 @@ create table if not exists public.comments (
 alter table public.profiles enable row level security;
 alter table public.community_posts enable row level security;
 alter table public.comments enable row level security;
+
+insert into storage.buckets (id, name, public)
+values ('community-images', 'community-images', true)
+on conflict (id) do update set public = true;
 
 create or replace function public.is_admin(user_id uuid)
 returns boolean
@@ -116,3 +129,40 @@ create policy "Users can delete own comments"
 on public.comments for delete
 to authenticated
 using (auth.uid() = author_id or public.is_admin(auth.uid()));
+
+drop policy if exists "Community images are readable by everyone" on storage.objects;
+create policy "Community images are readable by everyone"
+on storage.objects for select
+to anon, authenticated
+using (bucket_id = 'community-images');
+
+drop policy if exists "Users can upload community images" on storage.objects;
+create policy "Users can upload community images"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'community-images'
+  and auth.uid()::text = (storage.foldername(name))[1]
+);
+
+drop policy if exists "Users can update own community images" on storage.objects;
+create policy "Users can update own community images"
+on storage.objects for update
+to authenticated
+using (
+  bucket_id = 'community-images'
+  and auth.uid()::text = (storage.foldername(name))[1]
+)
+with check (
+  bucket_id = 'community-images'
+  and auth.uid()::text = (storage.foldername(name))[1]
+);
+
+drop policy if exists "Users can delete own community images" on storage.objects;
+create policy "Users can delete own community images"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'community-images'
+  and auth.uid()::text = (storage.foldername(name))[1]
+);

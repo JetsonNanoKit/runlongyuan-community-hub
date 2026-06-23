@@ -17,8 +17,14 @@ const STATUS_LABELS = {
   closed: '已关闭',
 };
 
+const KIND_LABELS = {
+  request: '我需要',
+  offer: '我可以提供',
+};
+
 const emptyPost = {
   category: 'carpool',
+  kind: 'request',
   title: '',
   content: '',
   contact: '',
@@ -68,8 +74,10 @@ function mapPost(row) {
     content: row.content,
     contact: row.contact,
     location: row.location || '',
+    kind: row.kind || 'request',
     status: row.status,
     metadata: row.metadata || {},
+    imageUrls: row.image_urls || [],
     authorId: row.author_id,
     createdAt: row.created_at,
   };
@@ -151,13 +159,139 @@ function getPostSummary(post) {
   return post.location || '润珑苑';
 }
 
+function getExamples(category) {
+  return EXAMPLES[category] || [];
+}
+
+function applyExample(example, setPostForm) {
+  setPostForm((previous) => ({
+    ...previous,
+    ...example,
+  }));
+}
+
+const EXAMPLES = {
+  carpool: [
+    {
+      kind: 'request',
+      title: '明早想找顺路车去科技园',
+      content: '一人出行，早上 8 点左右从润珑苑出发，希望能拼到顺路车。',
+      from: '润珑苑',
+      to: '科技园',
+      date: '',
+      time: '08:00',
+      seats: '1',
+      budget: '费用可议',
+      location: '润珑苑东门',
+    },
+    {
+      kind: 'offer',
+      title: '周末可顺路带人去深圳北',
+      content: '周六上午出发，车上还有 2 个座位，可在润珑苑门口上车。',
+      from: '润珑苑',
+      to: '深圳北站',
+      time: '10:00',
+      seats: '2',
+      budget: '分摊油费即可',
+      location: '润珑苑东门',
+    },
+  ],
+  errand: [
+    {
+      kind: 'request',
+      title: '今晚想请邻居帮忙取快递',
+      content: '快递在驿站，晚上不方便下楼，希望顺路的邻居帮忙带到楼下。',
+      from: '小区驿站',
+      to: '3 栋楼下',
+      serviceTime: '今晚 8 点前',
+      reward: '10 元或一杯奶茶',
+      location: '润珑苑驿站',
+    },
+    {
+      kind: 'offer',
+      title: '下班后可以帮忙带快递或买菜',
+      content: '工作日晚上回小区，顺路可以帮邻居从驿站带快递，也可以顺手买菜。',
+      from: '驿站/菜店',
+      to: '润珑苑',
+      serviceTime: '工作日 19:00 后',
+      reward: '随意给点辛苦费',
+      location: '润珑苑',
+    },
+  ],
+  housekeeping: [
+    {
+      kind: 'request',
+      title: '想找师傅帮忙修厨房水龙头',
+      content: '厨房水龙头有点漏水，希望小区里有经验的师傅帮忙看看。',
+      serviceTime: '周末白天',
+      budget: '费用可议',
+      location: '润珑苑',
+    },
+    {
+      kind: 'offer',
+      title: '周末可以帮忙装灯、修小件',
+      content: '平时会做一些简单安装维修，周末有空可以帮邻居装灯、换水龙头、修小件。',
+      serviceTime: '周末下午',
+      budget: '看情况协商',
+      location: '润珑苑',
+    },
+  ],
+  cleaning: [
+    {
+      kind: 'request',
+      title: '想约一次厨房深度保洁',
+      content: '厨房油污比较重，希望找靠谱保洁做一次深度清洁。',
+      serviceTime: '本周六上午',
+      budget: '200 元左右',
+      location: '润珑苑',
+    },
+    {
+      kind: 'offer',
+      title: '阿姨周末可接小区保洁',
+      content: '熟悉日常保洁、擦玻璃、厨房清理，周末可以在小区内接单。',
+      serviceTime: '周末可约',
+      budget: '按面积协商',
+      location: '润珑苑',
+    },
+  ],
+  lost_found: [
+    {
+      kind: 'request',
+      title: '寻找一串钥匙',
+      content: '可能掉在东门到 3 栋路上，钥匙扣是蓝色的，如有捡到请联系。',
+      lostFoundType: 'lost',
+      itemName: '蓝色钥匙扣钥匙',
+      serviceTime: '今天上午',
+      location: '东门到 3 栋路上',
+    },
+    {
+      kind: 'offer',
+      title: '捡到一张门禁卡',
+      content: '在小区花园附近捡到门禁卡一张，请失主描述卡套颜色后认领。',
+      lostFoundType: 'found',
+      itemName: '门禁卡',
+      serviceTime: '今天下午',
+      location: '中心花园',
+    },
+  ],
+  notice: [
+    {
+      kind: 'offer',
+      title: '周末邻里二手置换小提醒',
+      content: '如果大家有闲置小物，可以在评论里补充，方便邻居互相置换。',
+      location: '润珑苑',
+    },
+  ],
+};
+
 function App() {
   const [state, setState] = useState(emptyState);
   const [currentUser, setCurrentUser] = useState(null);
   const [authMode, setAuthMode] = useState('login');
   const [authForm, setAuthForm] = useState({ name: '', phone: '', password: '' });
   const [postForm, setPostForm] = useState(emptyPost);
-  const [filters, setFilters] = useState({ category: 'all', status: 'open', keyword: '' });
+  const [imageFiles, setImageFiles] = useState([]);
+  const [filters, setFilters] = useState({ category: 'all', kind: 'all', status: 'open', keyword: '' });
   const [activePostId, setActivePostId] = useState(null);
   const [commentText, setCommentText] = useState('');
   const [notice, setNotice] = useState('');
@@ -243,6 +377,7 @@ function App() {
     const keyword = filters.keyword.trim().toLowerCase();
     return state.posts
       .filter((post) => filters.category === 'all' || post.category === filters.category)
+      .filter((post) => filters.kind === 'all' || post.kind === filters.kind)
       .filter((post) => filters.status === 'all' || post.status === filters.status)
       .filter((post) => {
         if (!keyword) return true;
@@ -251,6 +386,7 @@ function App() {
           post.content,
           post.contact,
           post.location,
+          KIND_LABELS[post.kind],
           getCategory(post.category).label,
           getPostSummary(post),
         ].join(' ').toLowerCase().includes(keyword);
@@ -332,8 +468,9 @@ function App() {
       return;
     }
 
-    const payload = {
+    const basePayload = {
       category: postForm.category,
+      kind: postForm.kind,
       title: postForm.title.trim(),
       content: postForm.content.trim(),
       contact: postForm.contact.trim(),
@@ -343,20 +480,45 @@ function App() {
       status: 'open',
     };
 
-    if (!payload.title || !payload.content || !payload.contact) {
+    if (!basePayload.title || !basePayload.content || !basePayload.contact) {
       showNotice('请补充标题、详情和联系方式');
       return;
     }
 
     try {
+      const imageUrls = await uploadImages(imageFiles, currentUser.id);
+      const payload = {
+        ...basePayload,
+        image_urls: imageUrls,
+      };
       const { data, error } = await supabase.from('community_posts').insert(payload).select('*').single();
       if (error) throw error;
       setPostForm(emptyPost);
+      setImageFiles([]);
       await refreshState(data.id);
       showNotice('发布成功，邻居们现在都能看到了');
     } catch (error) {
       showNotice(error.message);
     }
+  }
+
+  async function uploadImages(files, userId) {
+    if (!files.length) return [];
+
+    const uploads = files.slice(0, 4).map(async (file, index) => {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `${userId}/${Date.now()}-${index}.${ext}`;
+      const { error } = await supabase.storage.from('community-images').upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+      if (error) throw error;
+
+      const { data } = supabase.storage.from('community-images').getPublicUrl(path);
+      return data.publicUrl;
+    });
+
+    return Promise.all(uploads);
   }
 
   async function handleCommentSubmit(event) {
@@ -529,6 +691,37 @@ function App() {
                 ))}
               </select>
             </label>
+            <div className="segmented kindSwitch">
+              <button
+                type="button"
+                className={postForm.kind === 'request' ? 'selected' : ''}
+                onClick={() => setPostForm({ ...postForm, kind: 'request' })}
+              >
+                我有需求
+              </button>
+              <button
+                type="button"
+                className={postForm.kind === 'offer' ? 'selected' : ''}
+                onClick={() => setPostForm({ ...postForm, kind: 'offer' })}
+              >
+                我能提供
+              </button>
+            </div>
+            <div className="exampleBox">
+              <strong>不知道怎么写？试试这些示例</strong>
+              <div>
+                {getExamples(postForm.category).map((example) => (
+                  <button
+                    key={`${example.kind}-${example.title}`}
+                    type="button"
+                    onClick={() => applyExample(example, setPostForm)}
+                  >
+                    <span>{KIND_LABELS[example.kind]}</span>
+                    {example.title}
+                  </button>
+                ))}
+              </div>
+            </div>
             <label>
               标题
               <input
@@ -666,6 +859,18 @@ function App() {
                 placeholder="手机号/微信/门牌口令"
               />
             </label>
+            <label>
+              图片补充
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(event) => setImageFiles(Array.from(event.target.files || []).slice(0, 4))}
+              />
+            </label>
+            {imageFiles.length > 0 && (
+              <p className="fileHint">已选择 {imageFiles.length} 张图片，最多支持 4 张。</p>
+            )}
             <button className="primaryButton" type="submit">发布信息</button>
           </form>
 
@@ -688,6 +893,21 @@ function App() {
                   <span>{category.icon}</span>
                   <strong>{category.label}</strong>
                   <small>{category.value === 'all' ? state.posts.length : categoryCounts[category.value] || 0}</small>
+                </button>
+              ))}
+            </div>
+            <div className="segmented">
+              {[
+                ['all', '全部'],
+                ['request', '需求'],
+                ['offer', '服务'],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  className={filters.kind === value ? 'selected' : ''}
+                  onClick={() => setFilters({ ...filters, kind: value })}
+                >
+                  {label}
                 </button>
               ))}
             </div>
@@ -726,10 +946,17 @@ function App() {
                 >
                   <div className="postMeta">
                     <span className={`pill ${category.tone}`}>{category.icon} {category.label}</span>
-                    <span>{STATUS_LABELS[post.status] || post.status} · {formatTime(post.createdAt)}</span>
+                    <span>{KIND_LABELS[post.kind]} · {STATUS_LABELS[post.status] || post.status}</span>
                   </div>
                   <h3>{post.title}</h3>
                   <p className="route">{getPostSummary(post)}</p>
+                  {post.imageUrls.length > 0 && (
+                    <div className="thumbStrip">
+                      {post.imageUrls.slice(0, 3).map((url) => (
+                        <img key={url} src={url} alt="" />
+                      ))}
+                    </div>
+                  )}
                   <p className="muted">{profilesById[post.authorId]?.name || '匿名邻居'} · {post.contact}</p>
                 </article>
               );
@@ -747,7 +974,7 @@ function App() {
                 <span className={`pill ${getCategory(activePost.category).tone}`}>
                   {getCategory(activePost.category).icon} {getCategory(activePost.category).label}
                 </span>
-                <span>{formatTime(activePost.createdAt)} 发布</span>
+                <span>{KIND_LABELS[activePost.kind]} · {formatTime(activePost.createdAt)} 发布</span>
               </div>
               <h2>{activePost.title}</h2>
               <p className="route large">{getPostSummary(activePost)}</p>
@@ -762,6 +989,15 @@ function App() {
                 <strong>{profilesById[activePost.authorId]?.name || '匿名邻居'}</strong>
               </div>
               <p className="description">{activePost.content}</p>
+              {activePost.imageUrls.length > 0 && (
+                <div className="imageGallery">
+                  {activePost.imageUrls.map((url) => (
+                    <a key={url} href={url} target="_blank" rel="noreferrer">
+                      <img src={url} alt="信息图片" />
+                    </a>
+                  ))}
+                </div>
+              )}
 
               {canManageActivePost && (
                 <div className="manageBar">
