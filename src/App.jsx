@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabaseClient';
 
 const CATEGORIES = [
-  { value: 'all', label: '全部', tone: 'slate' },
-  { value: 'carpool', label: '拼车', tone: 'blue' },
-  { value: 'errand', label: '跑腿', tone: 'teal' },
-  { value: 'housekeeping', label: '家政', tone: 'purple' },
-  { value: 'cleaning', label: '保洁', tone: 'green' },
-  { value: 'lost_found', label: '失物招领', tone: 'amber' },
-  { value: 'notice', label: '公告', tone: 'rose' },
+  { value: 'all', label: '全部', tone: 'slate', icon: '总', description: '看看邻里新鲜事' },
+  { value: 'carpool', label: '拼车', tone: 'blue', icon: '车', description: '顺路同行和通勤互助' },
+  { value: 'errand', label: '跑腿', tone: 'teal', icon: '跑', description: '代取代送和临时帮忙' },
+  { value: 'housekeeping', label: '家政', tone: 'purple', icon: '家', description: '维修、安装和上门服务' },
+  { value: 'cleaning', label: '保洁', tone: 'green', icon: '洁', description: '日常保洁和深度清理' },
+  { value: 'lost_found', label: '失物招领', tone: 'amber', icon: '寻', description: '丢了捡到都来登记' },
+  { value: 'notice', label: '公告', tone: 'rose', icon: '告', description: '小区提醒和公共信息' },
 ];
 
 const STATUS_LABELS = {
@@ -262,6 +262,12 @@ function App() {
   const canManageActivePost = Boolean(
     currentUser && activePost && (currentUser.id === activePost.authorId || currentUser.isAdmin),
   );
+  const categoryCounts = useMemo(() => {
+    return state.posts.reduce((counts, post) => {
+      counts[post.category] = (counts[post.category] || 0) + 1;
+      return counts;
+    }, {});
+  }, [state.posts]);
 
   async function handleAuthSubmit(event) {
     event.preventDefault();
@@ -441,9 +447,24 @@ function App() {
               <strong>{state.comments.length}</strong>
               <span>条回应</span>
             </div>
+            <div className="channelDeck">
+              {CATEGORIES.filter((category) => category.value !== 'all').map((category) => (
+                <button
+                  key={category.value}
+                  className={`channelCard ${filters.category === category.value ? 'selected' : ''}`}
+                  onClick={() => setFilters({ ...filters, category: category.value })}
+                >
+                  <span className={`channelIcon ${category.tone}`}>{category.icon}</span>
+                  <strong>{category.label}</strong>
+                  <small>{category.description}</small>
+                </button>
+              ))}
+            </div>
           </section>
 
-          <section className="card authCard">
+          <section className="card authCard neighborPass">
+            <p className="eyebrow">邻里通行证</p>
+            <h2>登录后一起维护信息</h2>
             <div className="tabs">
               <button className={authMode === 'login' ? 'active' : ''} onClick={() => setAuthMode('login')}>
                 登录
@@ -493,7 +514,7 @@ function App() {
       <main className="mainGrid">
         <section className="card publishCard">
           <div className="sectionTitle">
-            <p className="eyebrow">发布信息</p>
+            <p className="eyebrow">发到小区板</p>
             <h2>让邻居看见你的需求</h2>
           </div>
           <form className="postForm" onSubmit={handlePostSubmit}>
@@ -664,7 +685,9 @@ function App() {
                   className={filters.category === category.value ? 'selected' : ''}
                   onClick={() => setFilters({ ...filters, category: category.value })}
                 >
-                  {category.label}
+                  <span>{category.icon}</span>
+                  <strong>{category.label}</strong>
+                  <small>{category.value === 'all' ? state.posts.length : categoryCounts[category.value] || 0}</small>
                 </button>
               ))}
             </div>
@@ -702,7 +725,7 @@ function App() {
                   onClick={() => setActivePostId(post.id)}
                 >
                   <div className="postMeta">
-                    <span className={`pill ${category.tone}`}>{category.label}</span>
+                    <span className={`pill ${category.tone}`}>{category.icon} {category.label}</span>
                     <span>{STATUS_LABELS[post.status] || post.status} · {formatTime(post.createdAt)}</span>
                   </div>
                   <h3>{post.title}</h3>
@@ -721,7 +744,9 @@ function App() {
           {activePost ? (
             <>
               <div className="postMeta">
-                <span className={`pill ${getCategory(activePost.category).tone}`}>{getCategory(activePost.category).label}</span>
+                <span className={`pill ${getCategory(activePost.category).tone}`}>
+                  {getCategory(activePost.category).icon} {getCategory(activePost.category).label}
+                </span>
                 <span>{formatTime(activePost.createdAt)} 发布</span>
               </div>
               <h2>{activePost.title}</h2>
